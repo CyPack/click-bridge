@@ -233,6 +233,16 @@ fragment. Open the Tailscale URL on the remote device and that tab's clicks are 
 that session (see *Session wiring* above). Nothing needs to be installed on the remote device —
 a Chromium-based browser with a physical keyboard (for Alt+Click) is all it takes.
 
+### Keyboard shortcut per platform
+
+| Device / OS | Shortcut | Notes |
+|---|---|---|
+| Linux / Windows | **Alt + Click** | The snippet's capture-phase `preventDefault` suppresses Chrome's default Alt+Click-to-download behavior |
+| **macOS (MacBook)** | **⌥ Option + Click** | On macOS the Alt key is called Option; browsers report it as the same `e.altKey` — identical behavior, only the key's name differs |
+| macOS + Safari | ⚠️ not recommended | Option+Click may collide with Safari's "download link" default; use Chrome/Arc/Edge/Chromium |
+| Phone / tablet (no keyboard) | ❌ none | No Alt/Option key → the current gesture is unavailable (no mobile gesture yet) |
+| Tablet + hardware keyboard | ✅ Alt/⌥ + click | Works with a physical keyboard attached |
+
 Disable auto-binding with `--no-tailscale`, or pin exact addresses with one or more `--bind` flags:
 
 ```bash
