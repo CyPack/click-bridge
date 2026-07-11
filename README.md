@@ -227,6 +227,12 @@ The snippet targets `location.hostname` dynamically (see `snippet/click-bridge.j
 or a `*.ts.net` MagicDNS name — no dual-URL config needed on the browser side. Use the hostname
 guard shown above to make sure the snippet only ever activates on those trusted hosts.
 
+**Session wiring from a remote device:** run `tools/pair-url.sh <port|url>` inside the Claude
+session you want the remote tab wired to — it prints local + Tailscale URLs carrying a `#cb=TOKEN`
+fragment. Open the Tailscale URL on the remote device and that tab's clicks are delivered only to
+that session (see *Session wiring* above). Nothing needs to be installed on the remote device —
+a Chromium-based browser with a physical keyboard (for Alt+Click) is all it takes.
+
 Disable auto-binding with `--no-tailscale`, or pin exact addresses with one or more `--bind` flags:
 
 ```bash
