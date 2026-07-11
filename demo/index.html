@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>click-bridge demo v2 — Alt+Click + diagnostic context</title>
+<style>
+  :root { color-scheme: dark; }
+  body { font-family: system-ui, sans-serif; background:#0f1117; color:#e6e6e6; margin:0; padding:2rem; }
+  h1 { font-size:1.3rem; } .hint { color:#8b93a7; margin-bottom:2rem; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:1rem; max-width:900px; }
+  .card { background:#1a1d27; border:1px solid #2a2f3e; border-radius:12px; padding:1.2rem; }
+  .card h2 { margin:0 0 .5rem; font-size:1rem; }
+  .stat { font-size:2rem; font-weight:700; color:#7aa2f7; }
+  button.cta { background:#7aa2f7; color:#0f1117; border:0; padding:.6rem 1.2rem; border-radius:8px; font-weight:600; cursor:pointer; }
+  button.danger { background:#f7768e; }
+  .filter { display:flex; gap:.5rem; margin-top:.5rem; }
+  .filter input { background:#0f1117; border:1px solid #2a2f3e; border-radius:6px; padding:.4rem .6rem; color:#e6e6e6; flex:1; }
+</style>
+</head>
+<body>
+<h1>🖱️🎯 click-bridge demo v2</h1>
+<p class="hint">Hold <b>Alt</b> → red outline follows the cursor → <b>Alt+Click</b> → component + console errors + failed requests all go to Claude together.<br>
+First trigger a deliberate error with the red buttons, THEN Alt+Click a card → Claude sees the errors too.</p>
+
+<div class="grid">
+  <div class="card" data-component="StatsPanel" data-file="demo/index.html" data-line="30">
+    <h2>📊 StatsPanel</h2>
+    <div class="stat">1,284</div>
+    <div>Total tasks — up 12% this week</div>
+  </div>
+
+  <div class="card" data-component="TaskCard" data-file="demo/index.html" data-line="36">
+    <h2>📋 TaskCard</h2>
+    <div>123 Main Street · Install job</div>
+    <button class="cta" data-component="CompleteButton" data-file="demo/index.html" data-line="39">Complete</button>
+  </div>
+
+  <div class="card" data-component="FilterBar" data-file="demo/index.html" data-line="43">
+    <h2>🔍 FilterBar</h2>
+    <div class="filter"><input placeholder="search postcode..."><button class="cta">Search</button></div>
+  </div>
+
+  <div class="card" data-component="BrokenZone" data-file="demo/index.html" data-line="48">
+    <h2>💥 BrokenZone (diagnostic test)</h2>
+    <p>These buttons produce deliberate errors — then Alt+Click a card:</p>
+    <button class="cta danger" onclick="console.error('Demo error: TaskCard render crashed — undefined is not a function')">Trigger console.error</button>
+    <button class="cta danger" onclick="fetch('/api/does-not-exist').catch(()=>{})" style="margin-top:.4rem">Trigger a 404 request</button>
+  </div>
+</div>
+
+<script src="http://127.0.0.1:7823/snippet.js"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[Unit]
+Description=click-bridge self-heal check (detect + repair + report)
+
+[Service]
+Type=oneshot
+ExecStart=%h/projects/click-bridge/tools/self-heal.sh

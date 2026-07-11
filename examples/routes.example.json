@@ -1,0 +1,8 @@
+{
+  "_doc": "URL→project routing: when the click's host:port matches a project below, ONLY sessions whose cwd is under that project receive it. No match = the click is GLOBAL (any session can receive it).",
+  "routes": [
+    { "url_contains": ":8770", "project": "/home/USER/projects/my-dashboard" },
+    { "url_contains": ":3000", "project": "/home/USER/projects/my-nextjs-app" },
+    { "url_contains": ":5173", "project": "" }
+  ]
+}

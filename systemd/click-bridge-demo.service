@@ -1,0 +1,13 @@
+[Unit]
+Description=click-bridge demo page (127.0.0.1:7824)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/projects/click-bridge/demo
+ExecStart=/usr/bin/python3 -m http.server 7824 --bind 127.0.0.1
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target
