@@ -53,6 +53,19 @@ class ClickBridgeHandler(BaseHTTPRequestHandler):
         try:
             if self.path == "/health":
                 self._send(200, {"ok": True, "service": "click-bridge"})
+            elif self.path == "/snippet.js":
+                snip = Path(__file__).resolve().parent / "snippet" / "click-bridge.js"
+                if not snip.exists():
+                    self._send(404, {"ok": False, "error": "snippet not found"})
+                    return
+                body = snip.read_bytes()
+                self.send_response(200)
+                for k, v in CORS_HEADERS.items():
+                    self.send_header(k, v)
+                self.send_header("Content-Type", "application/javascript; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
             elif self.path == "/last":
                 last = self.data_dir / "last.json"
                 if not last.exists():

@@ -20,11 +20,25 @@ python3 server.py                 # default: --port 7823 --dir ~/.click-bridge
 ## Endpoints
 
 - `POST /click` — herhangi bir JSON objesi kabul edilir (max 256 KB). Konvansiyon alanları:
-  `component`, `source:{file,line,column}`, `url`, `selector`, `text`, `note`, `props`.
+  `component`, `component_chain`, `source:{file,line}`, `url`, `selector`, `text`, `box`,
+  `console_errors`, `failed_requests`, `viewport`, `note`.
   Server `ts` + `iso` ekler, `last.json`'ı atomik yazar, `history.jsonl`'a ekler.
+- `GET /snippet.js` — **universal capture script** (aşağıya bak)
 - `GET /last` — son tıklama (404 = henüz yok)
 - `GET /health` — sağlık kontrolü
 - CORS açık (`*`) — sadece 127.0.0.1'e bind olduğu için localhost dev origin'leri POST atabilir.
+
+## En kolay entegrasyon: tek satır (dev-only!)
+
+```html
+<script src="http://127.0.0.1:7823/snippet.js"></script>
+```
+
+Snippet şunları yapar: Alt+hover kırmızı çerçeve · Alt+Click → component adı (`data-component` >
+React fiber > tag) + kaynak (`data-file`/`data-line` > React `_debugSource`) + CSS selector + metin +
+box-model (padding/margin/boyut) + **son 10 console hatası** + **son 10 başarısız network isteği** +
+viewport'u tek payload'da POST'lar. ⚠️ ASLA production bundle'a koyma — dev-only guard kullan
+(Vite: `import.meta.env.DEV`, Next: `NODE_ENV === 'development'`).
 
 ## curl örnekleri
 

@@ -2,7 +2,7 @@
 <html lang="tr">
 <head>
 <meta charset="utf-8">
-<title>click-bridge demo — Alt+Click ile Claude'a gönder</title>
+<title>click-bridge demo v2 — Alt+Click + tanı bağlamı</title>
 <style>
   :root { color-scheme: dark; }
   body { font-family: system-ui, sans-serif; background:#0f1117; color:#e6e6e6; margin:0; padding:2rem; }
@@ -12,78 +12,42 @@
   .card h2 { margin:0 0 .5rem; font-size:1rem; }
   .stat { font-size:2rem; font-weight:700; color:#7aa2f7; }
   button.cta { background:#7aa2f7; color:#0f1117; border:0; padding:.6rem 1.2rem; border-radius:8px; font-weight:600; cursor:pointer; }
+  button.danger { background:#f7768e; }
   .filter { display:flex; gap:.5rem; margin-top:.5rem; }
   .filter input { background:#0f1117; border:1px solid #2a2f3e; border-radius:6px; padding:.4rem .6rem; color:#e6e6e6; flex:1; }
-  .bridge-hover { outline:2px solid #f7768e !important; outline-offset:2px; cursor:crosshair !important; }
-  #toast { position:fixed; bottom:1.5rem; right:1.5rem; background:#9ece6a; color:#0f1117; padding:.7rem 1.1rem;
-           border-radius:8px; font-weight:600; opacity:0; transition:opacity .25s; pointer-events:none; }
 </style>
 </head>
 <body>
-<h1>🖱️🎯 click-bridge demo</h1>
-<p class="hint"><b>Alt</b> tuşunu basılı tut → element kırmızı çerçevelenir → <b>Alt+Click</b> → Claude Code'a gider.</p>
+<h1>🖱️🎯 click-bridge demo v2</h1>
+<p class="hint"><b>Alt</b> basılı tut → kırmızı çerçeve → <b>Alt+Click</b> → component + console hataları + başarısız istekler birlikte Claude'a gider.<br>
+Önce kırmızı butonlarla kasıtlı hata üret, SONRA bir karta Alt+Click yap → Claude hataları da görür.</p>
 
 <div class="grid">
-  <div class="card" data-component="StatsPanel" data-file="demo/index.html" data-line="31">
+  <div class="card" data-component="StatsPanel" data-file="demo/index.html" data-line="30">
     <h2>📊 StatsPanel</h2>
     <div class="stat">1.284</div>
     <div>Toplam görev — bu hafta %12 ↑</div>
   </div>
 
-  <div class="card" data-component="TaskCard" data-file="demo/index.html" data-line="37">
+  <div class="card" data-component="TaskCard" data-file="demo/index.html" data-line="36">
     <h2>📋 TaskCard</h2>
     <div>Dorpsstraat 138 · HAS montaj</div>
-    <button class="cta" data-component="CompleteButton" data-file="demo/index.html" data-line="40">Tamamla</button>
+    <button class="cta" data-component="CompleteButton" data-file="demo/index.html" data-line="39">Tamamla</button>
   </div>
 
-  <div class="card" data-component="FilterBar" data-file="demo/index.html" data-line="44">
+  <div class="card" data-component="FilterBar" data-file="demo/index.html" data-line="43">
     <h2>🔍 FilterBar</h2>
     <div class="filter"><input placeholder="postcode ara..."><button class="cta">Ara</button></div>
   </div>
+
+  <div class="card" data-component="BrokenZone" data-file="demo/index.html" data-line="48">
+    <h2>💥 BrokenZone (tanı testi)</h2>
+    <p>Bu butonlar kasıtlı hata üretir — sonra bir karta Alt+Click yap:</p>
+    <button class="cta danger" onclick="console.error('Demo hata: TaskCard render patladı — undefined is not a function')">console.error üret</button>
+    <button class="cta danger" onclick="fetch('/api/olmayan-endpoint').catch(()=>{})" style="margin-top:.4rem">404 istek üret</button>
+  </div>
 </div>
 
-<div id="toast">→ Claude Code'a gönderildi ✓</div>
-
-<script>
-const BRIDGE = 'http://127.0.0.1:7823/click';
-let hovered = null;
-
-function cssPath(el) {
-  const parts = [];
-  while (el && el.nodeType === 1 && parts.length < 5) {
-    let s = el.tagName.toLowerCase();
-    if (el.id) { parts.unshift(s + '#' + el.id); break; }
-    if (el.className && typeof el.className === 'string')
-      s += '.' + el.className.trim().split(/\s+/).slice(0,2).join('.');
-    parts.unshift(s);
-    el = el.parentElement;
-  }
-  return parts.join(' > ');
-}
-
-document.addEventListener('mousemove', e => {
-  if (!e.altKey) { if (hovered) { hovered.classList.remove('bridge-hover'); hovered = null; } return; }
-  const t = e.target.closest('[data-component]') || e.target;
-  if (hovered !== t) { if (hovered) hovered.classList.remove('bridge-hover'); hovered = t; t.classList.add('bridge-hover'); }
-});
-
-document.addEventListener('click', async e => {
-  if (!e.altKey) return;
-  e.preventDefault(); e.stopPropagation();
-  const t = e.target.closest('[data-component]') || e.target;
-  const payload = {
-    component: t.dataset.component || t.tagName.toLowerCase(),
-    source: { file: t.dataset.file || location.pathname, line: t.dataset.line ? Number(t.dataset.line) : null },
-    selector: cssPath(t),
-    text: (t.innerText || '').trim().slice(0, 200),
-    url: location.href,
-  };
-  try {
-    await fetch(BRIDGE, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-    const toast = document.getElementById('toast');
-    toast.style.opacity = 1; setTimeout(() => toast.style.opacity = 0, 1500);
-  } catch (err) { alert('click-bridge kapalı mı? ' + err); }
-}, true);
-</script>
+<script src="http://127.0.0.1:7823/snippet.js"></script>
 </body>
 </html>

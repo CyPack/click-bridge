@@ -110,3 +110,13 @@ def test_unknown_path_404(bridge):
     host, port, _ = bridge
     status, _, _ = _req(host, port, "GET", "/nope")
     assert status == 404
+
+
+def test_snippet_js_served(bridge):
+    host, port, _ = bridge
+    status, headers, data = _req(host, port, "GET", "/snippet.js")
+    assert status == 200
+    assert "javascript" in headers.get("Content-Type", "")
+    body = data.decode()
+    assert "__clickBridgeLoaded" in body
+    assert "console_errors" in body
