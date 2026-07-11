@@ -45,6 +45,26 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/1000/bus}"
 
+# ── SESSION WIRING: pairing token üret + pending binding kaydet ────────────
+# Bu script bir Claude Code session'ının Bash tool'undan çalıştırıldıysa, ancestry'de
+# o session'ın claude process'i bulunur → açılan sekmenin tıkları SADECE o session'a gider.
+# claude atası yoksa (elle terminalden açıldıysa) → ilk prompt yazan session'a lazy-bind.
+. "$(dirname "$0")/../cb-lib.sh" 2>/dev/null || true
+TOK=$(uuidgen 2>/dev/null | tr -d '-' | cut -c1-10)
+[ -n "$TOK" ] || TOK="t$$$(date +%s)"
+CPID=""
+command -v cb_find_claude_pid >/dev/null 2>&1 && CPID=$(cb_find_claude_pid || true)
+CBD="$HOME/.click-bridge"
+mkdir -p "$CBD"
+flock "$CBD/.bindings.lock" sh -c 'printf "%s\n" "$1" >> "$2"' _ \
+  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"ts\":$(date +%s)}" \
+  "$CBD/bindings.jsonl"
+case "$URL" in
+  *\#*) URL="$URL&cb=$TOK" ;;
+  *)    URL="$URL#cb=$TOK" ;;
+esac
+echo "🔗 session-wiring: token=$TOK claude_pid=${CPID:-yok→lazy-bind} — bu sekmenin tıkları tek session'a bağlanacak"
+
 if ss -ltn 2>/dev/null | grep -q ":9222 "; then
   echo "→ dev-browser zaten açık: mevcut pencerede yeni sekme açılıyor ($URL)"
   nohup chromium-browser --user-data-dir="$PROFILE" "$URL" >/dev/null 2>&1 & disown

@@ -106,3 +106,30 @@ python3 -m pytest ~/projects/click-bridge/test_server.py -q # 10 test
 prefix) alır; route yoksa global. Fail-open (routing hatası enjeksiyonu engellemez). 6-senaryo test kanıtlı
 (cc-dashboard↔mnmveldops çapraz izolasyon). Ayrıca: `mcp-proxy-watchdog.timer` (30dk) MCP altyapısını,
 `click-bridge-heal.timer` (saatlik) köprüyü korur — iki bağımsız self-heal halkası.
+
+## 9. v5 Güncellemesi — Session Wiring (token ↔ session binding, DETERMİNİSTİK)
+
+Sorun: v4'e kadar teslimat sezgiseldi (URL-route + ilk-prompt-kazanır) → çok-session ortamda
+(herdr, paralel worktree) çakışma kaçınılmazdı. v5, tarayıcı sekmesini TEK bir Claude session'ına
+kimlikle bağlar:
+
+```
+dev-browser.sh                    snippet                       hook (inject v4+)
+──────────────                    ───────                       ──────────────────
+token üret (uuid)                 #cb=TOKEN → sessionStorage    tık.cb_token var mı?
+claude ancestor PID bul  ───►     (SEKME-BAŞI; tab'lar          ├─ bound   → SADECE bağlı session
+pending kaydı yaz                 karışmaz) → her tık            ├─ pending → ancestry PID eşleşirse
+  bindings.jsonl                  payload'ına cb_token           │            bind + teslim; canlı sahibi
+URL'e #cb=TOKEN ekle                                             │            varken BAŞKASI ALAMAZ
+                                                                 └─ unknown → lazy-bind (ilk yazan)
+```
+
+- **Eşleme kimliği:** launcher tarafı = `claude` CLI ancestor PID (`cb-lib.sh: cb_find_claude_pid`,
+  argv0-bazlı eşleşme — cmdline substring DEĞİL, ara kabuk yanlış-eşleşmesi yok); hook tarafı =
+  stdin `session_id`. Pending→bound geçişi ilk prompt'ta PID eşleşmesiyle kilitlenir.
+- **bindings.jsonl:** append-only, last-wins, 48h TTL, `flock` ile yarışsız (eşzamanlı prompt/launch).
+- **Token'sız tıklar:** v4 legacy davranış AYNEN (routes.json + exactly-once/broadcast) — geriye uyumlu.
+- **Routing düzeltmesi:** cwd eşleşmesi artık path-SINIRLI prefix (`proj` == cwd veya `proj/` öneki) —
+  `cc-dashboard-backups` gibi kardeş dizinler artık `cc-dashboard` route'una YANLIŞ eşleşmez.
+- **Test:** `CLICK_BRIDGE_DIR` izolasyonu ile 12-senaryo deterministik suite (bound/pending/lazy/steal-
+  koruması/prefix-fix/legacy) — 12/12 PASS (2026-07-11).

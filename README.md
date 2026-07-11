@@ -86,8 +86,11 @@ click-bridge kendi React app'lerinde component adı + dosya:satır verir, mcp-po
 python3 -m pytest test_server.py -q   # 9 test
 ```
 
-## v3/v4 Eklentileri (özet — detay: docs/ARCHITECTURE.md + Skill `click-bridge`)
+## v3/v4/v5 Eklentileri (özet — detay: docs/ARCHITECTURE.md + Skill `click-bridge`)
 
+- **Session wiring (v5):** `dev-browser.sh` ile açılan sekme `#cb=TOKEN` taşır; hook token'ı başlatan
+  Claude session'ına bağlar (`~/.click-bridge/bindings.jsonl`, process-ancestry PID eşleşmesi) → o sekmenin
+  tıkları SADECE o session'a gider, çok-session çakışması biter. Token'sız tıklar eski davranışta (aşağısı).
 - **Multi-session:** exactly-once teslimat (ilk yazan session alır) · `CLICK_BRIDGE_BROADCAST=1` = her session 1'er kez · `~/.click-bridge/delivery.jsonl` teslimat kaydı
 - **Proje routing:** `~/.click-bridge/routes.json` — URL'deki host:port → proje dizini eşlemesi; tık SADECE o projenin session'larına gider (örnek: `examples-routes.json`)
 - **Self-heal:** `click-bridge-heal.timer` (saatlik) — servis/endpoint/hook denetler + onarır
