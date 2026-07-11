@@ -85,3 +85,11 @@ click-bridge kendi React app'lerinde component adı + dosya:satır verir, mcp-po
 ```bash
 python3 -m pytest test_server.py -q   # 9 test
 ```
+
+## v3/v4 Eklentileri (özet — detay: docs/ARCHITECTURE.md + Skill `click-bridge`)
+
+- **Multi-session:** exactly-once teslimat (ilk yazan session alır) · `CLICK_BRIDGE_BROADCAST=1` = her session 1'er kez · `~/.click-bridge/delivery.jsonl` teslimat kaydı
+- **Proje routing:** `~/.click-bridge/routes.json` — URL'deki host:port → proje dizini eşlemesi; tık SADECE o projenin session'larına gider (örnek: `examples-routes.json`)
+- **Self-heal:** `click-bridge-heal.timer` (saatlik) — servis/endpoint/hook denetler + onarır
+- **dev-browser:** `tools/dev-browser.sh` — mcp-pointer ext yüklü + CDP :9222 açık izole chromium
+- **Masaüstü screenshot:** `tools/portal-screenshot.py` (GNOME Wayland portal)

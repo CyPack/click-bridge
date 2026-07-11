@@ -98,3 +98,11 @@ python3 -m pytest ~/projects/click-bridge/test_server.py -q # 10 test
 ```
 
 *2026-07-11 · git: ~/projects/click-bridge · Skill: `click-bridge` · Memory: `cc-visual-context-component-referencing.md`*
+
+## 8. v4 Güncellemesi — Proje Routing
+
+`~/.click-bridge/routes.json`: tıklama URL'indeki host:port → proje dizini. Hook, session'ın `cwd`'sini
+(stdin JSON) route'la karşılaştırır: eşleşen route varsa SADECE o projenin session'ları (worktree'ler dahil,
+prefix) alır; route yoksa global. Fail-open (routing hatası enjeksiyonu engellemez). 6-senaryo test kanıtlı
+(cc-dashboard↔mnmveldops çapraz izolasyon). Ayrıca: `mcp-proxy-watchdog.timer` (30dk) MCP altyapısını,
+`click-bridge-heal.timer` (saatlik) köprüyü korur — iki bağımsız self-heal halkası.
