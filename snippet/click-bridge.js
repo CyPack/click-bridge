@@ -7,7 +7,9 @@
 (() => {
   if (window.__clickBridgeLoaded) return;
   window.__clickBridgeLoaded = true;
-  const BRIDGE = 'http://127.0.0.1:7823/click';
+  // Sayfa hangi host'tan acildiysa kopru de o host'ta (lokal: 127.0.0.1, uzak: Tailscale IP/adi)
+  const _bh = (location.hostname && location.protocol.startsWith('http')) ? location.hostname : '127.0.0.1';
+  const BRIDGE = 'http://' + _bh + ':7823/click';
 
   // ── tanı tamponları (sayfa yüklendiğinden beri biriktir) ──────────────────
   const consoleBuf = [];
@@ -31,7 +33,7 @@
   const origFetch = window.fetch.bind(window);
   window.fetch = async (...a) => {
     const url = String((a[0] && a[0].url) || a[0] || '');
-    if (url.includes('127.0.0.1:7823')) return origFetch(...a); // köprünün kendisini izleme
+    if (url.includes(':7823')) return origFetch(...a); // köprünün kendisini izleme
     const start = performance.now();
     try {
       const r = await origFetch(...a);
@@ -134,7 +136,7 @@
       await fetch(BRIDGE, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
       toast('→ Claude Code ✓ ' + payload.component, true);
     } catch (err) {
-      toast('click-bridge kapalı? (systemctl --user start click-bridge) ' + err, false);
+      toast('click-bridge erişilemedi (' + _bh + ':7823) ' + err, false);
     }
   }, true);
 

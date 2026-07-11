@@ -10,7 +10,9 @@ Sadece stdlib. Sadece 127.0.0.1'e bind olur.
 import argparse
 import json
 import os
+import subprocess
 import sys
+import threading
 import tempfile
 import time
 from datetime import datetime
@@ -125,17 +127,38 @@ def make_server(host: str, port: int, data_dir) -> ThreadingHTTPServer:
     return ThreadingHTTPServer((host, port), handler)
 
 
+def _tailscale_ip():
+    """Tailscale IPv4'u dondur (yoksa None) — uzak cihazlardan tiklama kabulu icin."""
+    try:
+        out = subprocess.run(["tailscale", "ip", "-4"], capture_output=True, text=True, timeout=3)
+        line = out.stdout.strip().splitlines()
+        return line[0] if line else None
+    except Exception:
+        return None
+
+
 def main():
-    ap = argparse.ArgumentParser(description="click-bridge localhost server")
+    ap = argparse.ArgumentParser(description="click-bridge server (localhost + tailscale)")
     ap.add_argument("--port", type=int, default=7823)
     ap.add_argument("--dir", default="~/.click-bridge")
+    ap.add_argument("--bind", action="append",
+                    help="ek bind adresi (tekrarlanabilir); default: 127.0.0.1 + tailscale-otomatik")
+    ap.add_argument("--no-tailscale", action="store_true")
     args = ap.parse_args()
 
-    httpd = make_server("127.0.0.1", args.port, args.dir)
-    sys.stderr.write("click-bridge: listening on 127.0.0.1:%d, dir=%s\n"
-                     % (httpd.server_address[1], Path(args.dir).expanduser()))
+    binds = args.bind or ["127.0.0.1"]
+    if not args.no_tailscale and not args.bind:
+        ts = _tailscale_ip()
+        if ts:
+            binds.append(ts)
+
+    servers = [make_server(b, args.port, args.dir) for b in binds]
+    for extra in servers[1:]:
+        threading.Thread(target=extra.serve_forever, daemon=True).start()
+    sys.stderr.write("click-bridge: listening on %s port %d, dir=%s\n"
+                     % (", ".join(binds), args.port, Path(args.dir).expanduser()))
     try:
-        httpd.serve_forever()
+        servers[0].serve_forever()
     except KeyboardInterrupt:
         pass
 
