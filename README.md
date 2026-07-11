@@ -96,3 +96,27 @@ python3 -m pytest test_server.py -q   # 9 test
 - **Self-heal:** `click-bridge-heal.timer` (saatlik) — servis/endpoint/hook denetler + onarır
 - **dev-browser:** `tools/dev-browser.sh` — mcp-pointer ext yüklü + CDP :9222 açık izole chromium
 - **Masaüstü screenshot:** `tools/portal-screenshot.py` (GNOME Wayland portal)
+
+## Uzak cihaz (Tailscale) kullanımı + platform kısayolları
+
+Uzak cihaza **hiçbir kurulum gerekmez** — server Tailscale IP'ye de bind olur, snippet köprü
+hedefini `location.hostname`'den dinamik alır. Tek sunucu-tarafı ön koşul: uygulamanın snippet
+guard'ı Tailscale hostname'lerini kabul etmeli (`100.*` / `.ts.net`).
+
+Uzak sekmeyi belirli bir Claude session'ına kablolamak için (dev-browser'ın uzak muadili):
+
+```bash
+# kablolamak istediğin session'ın İÇİNDE:
+bash tools/pair-url.sh 8770
+# → 🔗 tailscale: http://100.x.y.z:8770/#cb=TOKEN   ← bu URL'yi uzak cihazda aç
+```
+
+### Kısayol platform tablosu
+
+| Cihaz / OS | Kısayol | Not |
+|---|---|---|
+| Linux / Windows | **Alt + Click** | Snippet capture-phase `preventDefault` ile Chrome'un Alt+Click-indirme davranışını bastırır |
+| **macOS (MacBook)** | **⌥ Option + Click** | macOS'ta Alt tuşunun adı Option'dır; tarayıcı bunu aynı `e.altKey` olarak bildirir — davranış birebir aynı, sadece tuşun adı farklı |
+| macOS + Safari | ⚠️ önerilmez | Option+Click Safari'de "linki indir" varsayılanıyla çakışabilir; Chrome/Arc/Edge/Chromium kullan |
+| Telefon / tablet (klavyesiz) | ❌ yok | Alt/Option tuşu olmadığından mevcut jest çalışmaz (mobil jest henüz yok) |
+| Tablet + fiziksel klavye | ✅ Alt/⌥ + tık | Donanım klavyesi varsa çalışır |
