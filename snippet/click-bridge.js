@@ -11,6 +11,21 @@
   const _bh = (location.hostname && location.protocol.startsWith('http')) ? location.hostname : '127.0.0.1';
   const BRIDGE = 'http://' + _bh + ':7823/click';
 
+  // ── SESSION WIRING: URL #cb=TOKEN → sessionStorage (PER-TAB; NOT localStorage —
+  // a second tab on the same origin would overwrite the first tab's token). Tokened
+  // clicks are bound to a single Claude session on the hook side (bindings.jsonl),
+  // which makes multi-session collisions impossible.
+  let CB_TOKEN = null;
+  try {
+    const m = (location.hash || '').match(/[#&]cb=([A-Za-z0-9_-]+)/);
+    if (m) {
+      sessionStorage.setItem('__cb_token', m[1]);
+      const cleaned = location.hash.replace(/[#&]cb=[A-Za-z0-9_-]+/, '').replace(/^&/, '#');
+      history.replaceState(null, '', location.pathname + location.search + (cleaned === '#' ? '' : cleaned));
+    }
+    CB_TOKEN = sessionStorage.getItem('__cb_token');
+  } catch (_) { /* no sessionStorage → continue tokenless (legacy delivery) */ }
+
   // ── diagnostic buffers (accumulated since page load) ──────────────
   const consoleBuf = [];
   const netBuf = [];
@@ -118,6 +133,7 @@
     const react = reactInfo(t);
     const ds = t.dataset || {};
     const payload = {
+      cb_token: CB_TOKEN || undefined,
       component: ds.component || (react && react.components[0]) || t.tagName.toLowerCase(),
       component_chain: react ? react.components : [],
       source: ds.file ? { file: ds.file, line: ds.line ? Number(ds.line) : null } : (react && react.source) || null,

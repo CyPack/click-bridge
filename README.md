@@ -195,6 +195,12 @@ import { Inspector } from 'react-dev-inspector'
 Run as many parallel Claude Code sessions as you want — the hook is global and every session polls
 the same `~/.click-bridge/last.json`.
 
+- **Session wiring (v1.1, strongest guarantee):** open the preview via `tools/dev-browser.sh` and
+  the tab carries a `#cb=TOKEN` fragment. The snippet stores it **per-tab** (sessionStorage) and
+  stamps every click with it; the hook binds the token to the Claude session that launched the
+  browser (process-ancestry PID match, `~/.click-bridge/bindings.jsonl`) — so that tab's clicks go
+  to exactly that session, no matter how many parallel sessions are running. Tabs opened without a
+  token fall back to the legacy rules below.
 - **Exactly-once (default):** a click is delivered to whichever session's *next prompt* is submitted
   first. Other sessions never see it — no duplicate context, no noise.
 - **Broadcast:** set `CLICK_BRIDGE_BROADCAST=1` in a session's environment before starting it, and

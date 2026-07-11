@@ -112,3 +112,28 @@ receive the click; if no route matches, the click is global. The routing check f
 error never blocks delivery. This lets you run multiple unrelated projects' Claude Code sessions
 side by side without one project's clicks leaking into another's context. See
 `examples/routes.example.json` for the config format.
+
+## 9. Session Wiring (v1.1) — deterministic tab ↔ session binding
+
+Until v1.0 delivery was heuristic (URL routing + first-prompt-wins), which guarantees collisions
+once many sessions run in parallel (terminal multiplexers, per-feature worktrees). v1.1 binds a
+browser tab to exactly one Claude session:
+
+```
+dev-browser.sh                     snippet                        hook
+──────────────                     ───────                        ────
+generate token (uuid)              #cb=TOKEN → sessionStorage     click has cb_token?
+find claude ancestor PID   ───►    (PER-TAB; tabs never mix)      ├─ bound   → only the bound session
+append pending binding             → every click carries          ├─ pending → ancestry-PID match binds
+  bindings.jsonl                     cb_token                     │            + delivers; while the owner
+open URL with #cb=TOKEN                                           │            is alive nobody else can steal
+                                                                  └─ unknown → lazy-bind (first prompter)
+```
+
+- **Pairing identity:** launcher side = the `claude` CLI ancestor PID (`cb-lib.sh:
+  cb_find_claude_pid`, argv0-based matching — not cmdline substring, so intermediate shells never
+  false-match); hook side = the `session_id` from stdin. Pending→bound locks on the first prompt.
+- **bindings.jsonl:** append-only, last-wins, 48h TTL, race-free via `flock`.
+- **Tokenless clicks:** exact v1.0 legacy behavior (routes.json + exactly-once/broadcast).
+- **Routing fix:** the cwd match is now path-bounded (`proj` == cwd or `proj/` prefix) — sibling
+  directories like `my-app-backups` no longer false-match a `my-app` route.

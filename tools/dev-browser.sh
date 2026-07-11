@@ -45,6 +45,27 @@ export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/1000}"
 export WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}"
 export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=/run/user/1000/bus}"
 
+# ── SESSION WIRING: generate a pairing token + record a pending binding ───────
+# If this script was launched from a Claude Code session's Bash tool, that session's
+# claude process is in our ancestry → clicks from the opened tab go ONLY to that session.
+# No claude ancestor (launched from a plain terminal)? → lazy-bind to the first session
+# that submits a prompt after the click.
+. "$(dirname "$0")/../cb-lib.sh" 2>/dev/null || true
+TOK=$(uuidgen 2>/dev/null | tr -d '-' | cut -c1-10)
+[ -n "$TOK" ] || TOK="t$$$(date +%s)"
+CPID=""
+command -v cb_find_claude_pid >/dev/null 2>&1 && CPID=$(cb_find_claude_pid || true)
+CBD="$HOME/.click-bridge"
+mkdir -p "$CBD"
+flock "$CBD/.bindings.lock" sh -c 'printf "%s\n" "$1" >> "$2"' _ \
+  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"ts\":$(date +%s)}" \
+  "$CBD/bindings.jsonl"
+case "$URL" in
+  *\#*) URL="$URL&cb=$TOK" ;;
+  *)    URL="$URL#cb=$TOK" ;;
+esac
+echo "🔗 session-wiring: token=$TOK claude_pid=${CPID:-none→lazy-bind} — clicks from this tab bind to a single session"
+
 if ss -ltn 2>/dev/null | grep -q ":9222 "; then
   echo "→ dev-browser already open: opening a new tab in the existing window ($URL)"
   nohup chromium-browser --user-data-dir="$PROFILE" "$URL" >/dev/null 2>&1 & disown
