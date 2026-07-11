@@ -1,0 +1,8 @@
+{
+  "_doc": "URL→proje yönlendirme: tıklamanın geldiği host:port hangi projeye aitse, SADECE cwd'si o projede olan CC session'ları alır. Eşleşme yoksa tık GLOBAL'dir (her session alabilir).",
+  "routes": [
+    { "url_contains": ":8770", "project": "/home/ayaz/cc-dashboard" },
+    { "url_contains": ":3000", "project": "/home/ayaz/CypackSolutions/mnmveldops" },
+    { "url_contains": ":5173", "project": "" }
+  ]
+}

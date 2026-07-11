@@ -9,10 +9,34 @@ D="$HOME/.click-bridge"
 F="$D/last.json"
 [ -f "$F" ] || exit 0
 
-# hook stdin JSON'undan session kimliği
+# hook stdin JSON'undan session kimliği + çalışma dizini
 in=$(cat - 2>/dev/null || true)
 sid=$(printf '%s' "$in" | jq -r '.session_id // "unknown"' 2>/dev/null | cut -c1-12)
 [ -n "$sid" ] || sid=unknown
+scwd=$(printf '%s' "$in" | jq -r '.cwd // empty' 2>/dev/null)
+
+# PROJE ROUTING: tıklamanın URL'i routes.json'da bir projeye eşliyse,
+# SADECE cwd'si o proje altında olan session'lar alır (çok-proje çakışma önleme).
+if [ -f "$D/routes.json" ] && [ -n "$scwd" ]; then
+  verdict=$(python3 - "$F" "$D/routes.json" "$scwd" <<'PYEOF' 2>/dev/null
+import json, sys
+try:
+    click = json.load(open(sys.argv[1]))
+    routes = json.load(open(sys.argv[2])).get("routes", [])
+    cwd = sys.argv[3]
+    url = click.get("url", "") or ""
+    for r in routes:
+        pat, proj = r.get("url_contains", ""), r.get("project", "")
+        if pat and proj and pat in url:
+            print("allow" if cwd.startswith(proj) else "deny")
+            sys.exit(0)
+    print("allow")  # eşleşen route yok → global tık
+except Exception:
+    print("allow")  # routing hatası köprüyü ASLA kilitlemesin
+PYEOF
+)
+  [ "$verdict" = "deny" ] && exit 0
+fi
 
 now=$(date +%s)
 mtime=$(stat -c %Y "$F" 2>/dev/null) || exit 0
