@@ -56,8 +56,11 @@ CPID=""
 command -v cb_find_claude_pid >/dev/null 2>&1 && CPID=$(cb_find_claude_pid || true)
 CBD="$HOME/.click-bridge"
 mkdir -p "$CBD"
+# url alanı: dış tüketiciler (örn. herdr preview-sync) pencere kapatıldığında önizlemeyi
+# yeniden açabilsin diye BAZ URL (#cb eklenmeden) kayda girer. JSON için " ve \ escape edilir.
+URL_JSON=$(printf '%s' "$URL" | sed 's/\\/\\\\/g; s/"/\\"/g')
 flock "$CBD/.bindings.lock" sh -c 'printf "%s\n" "$1" >> "$2"' _ \
-  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"ts\":$(date +%s)}" \
+  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"url\":\"$URL_JSON\",\"ts\":$(date +%s)}" \
   "$CBD/bindings.jsonl"
 case "$URL" in
   *\#*) URL="$URL&cb=$TOK" ;;

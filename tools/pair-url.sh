@@ -13,8 +13,12 @@ CPID=""
 command -v cb_find_claude_pid >/dev/null 2>&1 && CPID=$(cb_find_claude_pid || true)
 CBD="$HOME/.click-bridge"
 mkdir -p "$CBD"
+# url alanı: dış tüketiciler için baz URL (port kısaltmasında lokal formu yazılır; uzak
+# pencere zaten lokalden yönetilemez, kayıt bilgi amaçlıdır). JSON için " ve \ escape edilir.
+if [[ "$ARG" =~ ^[0-9]+$ ]]; then REC_URL="http://127.0.0.1:$ARG/"; else REC_URL="$ARG"; fi
+URL_JSON=$(printf '%s' "$REC_URL" | sed 's/\\/\\\\/g; s/"/\\"/g')
 flock "$CBD/.bindings.lock" sh -c 'printf "%s\n" "$1" >> "$2"' _ \
-  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"ts\":$(date +%s)}" \
+  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"url\":\"$URL_JSON\",\"ts\":$(date +%s)}" \
   "$CBD/bindings.jsonl"
 
 wire() { case "$1" in *\#*) echo "$1&cb=$TOK" ;; *) echo "$1#cb=$TOK" ;; esac; }
