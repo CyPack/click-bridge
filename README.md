@@ -16,7 +16,7 @@ terminal agent workflow, on *your* stack, fully local.
 - 🗺️ **Project-aware routing** — clicks only reach sessions whose working directory matches the source project (git-worktree aware)
 - 🌐 **Remote/Tailscale mode** — click from your phone or another machine on your tailnet, land in the same terminal session
 - 🩹 **Self-healing** — systemd `Restart=on-failure` + an hourly detect-and-repair timer
-- ✅ **10 passing tests**, real HTTP client against a real server, no mocks
+- ✅ **13 passing tests**, real HTTP client against a real server, no mocks
 
 ---
 
@@ -199,8 +199,9 @@ the same `~/.click-bridge/last.json`.
   the tab carries a `#cb=TOKEN` fragment. The snippet stores it **per-tab** (sessionStorage) and
   stamps every click with it; the hook binds the token to the Claude session that launched the
   browser (process-ancestry PID match, `~/.click-bridge/bindings.jsonl`) — so that tab's clicks go
-  to exactly that session, no matter how many parallel sessions are running. Tabs opened without a
-  token fall back to the legacy rules below.
+  to exactly that session, no matter how many parallel sessions are running. Binding records also
+  retain the base preview `url`, allowing external session managers to reopen a closed preview.
+  Tabs opened without a token fall back to the legacy rules below.
 - **Exactly-once (default):** a click is delivered to whichever session's *next prompt* is submitted
   first. Other sessions never see it — no duplicate context, no noise.
 - **Broadcast:** set `CLICK_BRIDGE_BROADCAST=1` in a session's environment before starting it, and
@@ -264,6 +265,14 @@ so they work for any user without editing — as long as you cloned this repo to
 `~/projects/click-bridge`. If you cloned it elsewhere, edit the `ExecStart=`/`WorkingDirectory=`
 lines accordingly.
 
+## Optional Chromium extension
+
+`tools/dev-browser.sh` loads the vendored MCP Pointer extension when
+`vendor/mcp-pointer-extension/` is present. Override it with
+`CLICK_BRIDGE_EXTENSION=/path/to/unpacked-extension`, or set `CLICK_BRIDGE_EXTENSION` to an empty
+value to launch without an extension. Vendored artifacts retain their upstream MIT license and
+build provenance in that directory.
+
 ## Self-healing
 
 `click-bridge-heal.timer` runs `tools/self-heal.sh` hourly (plus 5 minutes after boot). It checks:
@@ -309,11 +318,12 @@ bash tools/self-heal.sh; echo $?   # 0 = healthy/repaired, 1 = needs your attent
 ## Testing
 
 ```bash
-python3 -m pytest test_server.py -q
+python3 -m pytest test_server.py test_session_wiring.py -q
 ```
 
-10 tests, run against a real `ThreadingHTTPServer` instance via `http.client` — no mocks, no test
-doubles for the HTTP layer.
+The suite exercises the real `ThreadingHTTPServer` through `http.client` and adds focused shell-level
+regressions for preview URL persistence, pending-to-bound session wiring, and optional extension
+loading.
 
 ## FAQ
 

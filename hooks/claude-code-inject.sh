@@ -84,12 +84,24 @@ if token:
     if b and b.get("state") == "pending":
         cpid = str(b.get("claude_pid") or "")
         if cpid and mypid and cpid == mypid:
-            append({"token": token, "state": "bound", "session_id": sid, "claude_pid": cpid})
+            append({
+                "token": token,
+                "state": "bound",
+                "session_id": sid,
+                "claude_pid": cpid,
+                "url": b.get("url"),
+            })
             out("allow-bound")
         if cpid and os.path.exists("/proc/" + cpid):
             out("deny")  # the owner is known and alive but is not this session — do NOT steal
         # owner dead/unknown → fall through to lazy
-    append({"token": token, "state": "bound", "session_id": sid, "via": "lazy"})
+    append({
+        "token": token,
+        "state": "bound",
+        "session_id": sid,
+        "via": "lazy",
+        "url": b.get("url") if b else None,
+    })
     out("allow-lazy")
 
 # no token → legacy routing (path-BOUNDED prefix: my-app-backups ≠ my-app)

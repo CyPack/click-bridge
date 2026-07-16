@@ -17,7 +17,7 @@
                │ POST /click (localhost, CORS *)
                ▼
 ┌─ click-bridge server :7823 (systemd: click-bridge.service) ────────────────┐
-│  stdlib Python · 127.0.0.1-only · 10 pytest tests                          │
+│  stdlib Python · 127.0.0.1-only · 13 pytest tests                          │
 │  • last.json  (ATOMIC write — most recent click)                           │
 │  • history.jsonl (append-only event log)                                   │
 │  • GET /snippet.js · /last · /health                                       │
@@ -69,7 +69,7 @@
    checks the services, the endpoint, the snippet, the hook registration, and a hook smoke test;
    REPAIRS what it can (restart, quarantine a corrupt JSON file, archive history), and logs what it
    can't to `_health.log` as `FAIL`.
-3. **Test suite** — 10 pytest tests exercise the server against a real HTTP client on every change,
+3. **Test suite** — 13 pytest tests exercise the server against a real HTTP client on every change,
    so regressions in the core delivery path surface immediately.
 
 ## 5. Multi-Session Guide
@@ -133,7 +133,9 @@ open URL with #cb=TOKEN                                           │           
 - **Pairing identity:** launcher side = the `claude` CLI ancestor PID (`cb-lib.sh:
   cb_find_claude_pid`, argv0-based matching — not cmdline substring, so intermediate shells never
   false-match); hook side = the `session_id` from stdin. Pending→bound locks on the first prompt.
-- **bindings.jsonl:** append-only, last-wins, 48h TTL, race-free via `flock`.
+- **bindings.jsonl:** append-only, last-wins, 48h TTL, race-free via `flock`. Pending and bound
+  records retain the base preview `url`, so external session managers can reopen a closed tab
+  without reconstructing its address.
 - **Tokenless clicks:** exact v1.0 legacy behavior (routes.json + exactly-once/broadcast).
 - **Routing fix:** the cwd match is now path-bounded (`proj` == cwd or `proj/` prefix) — sibling
   directories like `my-app-backups` no longer false-match a `my-app` route.

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>MCP Pointer Settings</h1>
+    </header>
+
+    <form class="config-form">
+      <div class="field-group">
+        <label class="toggle-label">
+          <input type="checkbox" id="enabled" class="toggle-input">
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">Extension Enabled</span>
+        </label>
+      </div>
+
+      <div class="field-group">
+        <label for="port" class="field-label">MCP Server Port</label>
+        <input type="number" id="port" class="field-input" min="1" max="65535" placeholder="7007">
+        <span class="field-hint">Port for WebSocket connection to MCP server</span>
+      </div>
+
+      <div class="button-group">
+        <button type="button" id="saveBtn" class="btn btn-primary">Save Settings</button>
+        <button type="button" id="resetBtn" class="btn btn-secondary">Reset to Defaults</button>
+      </div>
+    </form>
+
+    <div class="status" id="status"></div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

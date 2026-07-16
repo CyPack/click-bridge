@@ -4,7 +4,9 @@
 # Usage: dev-browser.sh [url]        (default: click-bridge demo)
 #        dev-browser.sh --state      (analysis only, don't launch)
 set -u
-EXT="$HOME/projects/click-bridge/vendor/mcp-pointer-extension"  # optional: path to an unpacked extension to load
+ROOT="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+DEFAULT_EXT="$ROOT/vendor/mcp-pointer-extension"
+EXT="${CLICK_BRIDGE_EXTENSION-$DEFAULT_EXT}"
 PROFILE="$HOME/.cache/cc-dev-browser-profile"
 ROUTES="$HOME/.click-bridge/routes.json"
 URL="${1:-http://127.0.0.1:7824/}"
@@ -57,9 +59,22 @@ CPID=""
 command -v cb_find_claude_pid >/dev/null 2>&1 && CPID=$(cb_find_claude_pid || true)
 CBD="$HOME/.click-bridge"
 mkdir -p "$CBD"
+# Store the base URL before adding #cb so external consumers can reopen the preview.
+BINDING_JSON=$(python3 - "$TOK" "${CPID:-}" "$URL" "$(date +%s)" <<'PYEOF'
+import json, sys
+
+token, claude_pid, url, ts = sys.argv[1:]
+print(json.dumps({
+    "token": token,
+    "state": "pending",
+    "claude_pid": int(claude_pid) if claude_pid else None,
+    "url": url,
+    "ts": int(ts),
+}, separators=(",", ":")))
+PYEOF
+)
 flock "$CBD/.bindings.lock" sh -c 'printf "%s\n" "$1" >> "$2"' _ \
-  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"ts\":$(date +%s)}" \
-  "$CBD/bindings.jsonl"
+  "$BINDING_JSON" "$CBD/bindings.jsonl"
 case "$URL" in
   *\#*) URL="$URL&cb=$TOK" ;;
   *)    URL="$URL#cb=$TOK" ;;
@@ -71,6 +86,12 @@ if ss -ltn 2>/dev/null | grep -q ":9222 "; then
   nohup chromium-browser --user-data-dir="$PROFILE" "$URL" >/dev/null 2>&1 & disown
 else
   echo "→ launching a new dev-browser ($URL, CDP :9222)"
-  nohup chromium-browser --user-data-dir="$PROFILE" --load-extension="$EXT" \
+  EXT_ARGS=()
+  if [ -n "$EXT" ] && [ -d "$EXT" ]; then
+    EXT_ARGS=("--load-extension=$EXT")
+  elif [ -n "${CLICK_BRIDGE_EXTENSION:-}" ]; then
+    echo "warning: CLICK_BRIDGE_EXTENSION does not exist: $EXT" >&2
+  fi
+  nohup chromium-browser --user-data-dir="$PROFILE" "${EXT_ARGS[@]}" \
     --remote-debugging-port=9222 --no-first-run --no-default-browser-check "$URL" >/dev/null 2>&1 & disown
 fi

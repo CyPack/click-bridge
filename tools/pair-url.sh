@@ -14,9 +14,23 @@ CPID=""
 command -v cb_find_claude_pid >/dev/null 2>&1 && CPID=$(cb_find_claude_pid || true)
 CBD="$HOME/.click-bridge"
 mkdir -p "$CBD"
+if [[ "$ARG" =~ ^[0-9]+$ ]]; then REC_URL="http://127.0.0.1:$ARG/"; else REC_URL="$ARG"; fi
+# Store the base URL so external consumers can reopen the preview after its tab closes.
+BINDING_JSON=$(python3 - "$TOK" "${CPID:-}" "$REC_URL" "$(date +%s)" <<'PYEOF'
+import json, sys
+
+token, claude_pid, url, ts = sys.argv[1:]
+print(json.dumps({
+    "token": token,
+    "state": "pending",
+    "claude_pid": int(claude_pid) if claude_pid else None,
+    "url": url,
+    "ts": int(ts),
+}, separators=(",", ":")))
+PYEOF
+)
 flock "$CBD/.bindings.lock" sh -c 'printf "%s\n" "$1" >> "$2"' _ \
-  "{\"token\":\"$TOK\",\"state\":\"pending\",\"claude_pid\":${CPID:-null},\"ts\":$(date +%s)}" \
-  "$CBD/bindings.jsonl"
+  "$BINDING_JSON" "$CBD/bindings.jsonl"
 
 wire() { case "$1" in *\#*) echo "$1&cb=$TOK" ;; *) echo "$1#cb=$TOK" ;; esac; }
 
